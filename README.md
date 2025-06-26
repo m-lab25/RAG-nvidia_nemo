@@ -1,6 +1,10 @@
-# 🤖 NVIDIA NeMo PDF Chat Demo
 
-A **Retrieval-Augmented Generation (RAG)** demo built with **NVIDIA NeMo**, enabling users to upload PDFs and interact with their content using natural language questions. This Streamlit app combines document ingestion, embedding, retrieval, and large language model (LLM) generation into an intuitive pipeline.
+# 🤖 PDF Chat Assistant – NeMo v1 (GraphRAG Ready)
+
+A **Retrieval-Augmented Generation (RAG)** demo built with **NVIDIA NeMo**, enabling users to upload PDFs and interact with their content using natural language questions.
+
+> ✅ Currently uses: FAISS-based retrieval  
+> 🚧 Upcoming (v2): GraphRAG integration (graph-based contextual search)
 
 ---
 
@@ -11,121 +15,164 @@ This application allows users to:
 - Upload one or more PDF files.
 - Parse and chunk the text using `PyPDFLoader` and `RecursiveCharacterTextSplitter`.
 - Create semantic embeddings using `NVIDIAEmbeddings`.
-- Store and search document chunks in a `FAISS` vector index.
-- Retrieve relevant information based on a user's query.
-- Use `meta/llama3-70b-instruct` LLM from NVIDIA to generate an accurate answer grounded in context.
+- Store and search document chunks in a persistent `FAISS` vector index.
+- Ask questions and retrieve relevant information grounded in context.
+- Get answers using `meta/llama3-70b-instruct` via NVIDIA NeMo.
 
 ---
 
 ## 🧠 What Is RAG?
 
-**Retrieval-Augmented Generation (RAG)** is a technique where a language model is not solely dependent on its pre-trained knowledge. Instead, it retrieves relevant context from external data (in this case, PDF documents) and uses that context to generate responses. This leads to:
+**Retrieval-Augmented Generation (RAG)** enhances large language models (LLMs) by combining them with an external knowledge base (e.g., PDF documents). Instead of generating from scratch, the LLM retrieves relevant content and answers based on that, which results in:
 
-- More accurate answers
-- Dynamic knowledge injection
-- Reduced hallucination
+- Increased accuracy
+- Lower hallucination
+- Real-time document-based reasoning
 
 ---
 
 ## 🧰 Tech Stack
 
-- 🧠 **NVIDIA NeMo NIM** (LLM + Embeddings)
-- 📄 **LangChain** for chaining components
-- 📚 **FAISS** for fast similarity search
-- 📥 **PyPDFLoader** for PDF ingestion
-- 🧩 **RecursiveCharacterTextSplitter** for chunking
-- 💬 **Streamlit** frontend interface
+| Component                | Technology                    |
+|--------------------------|-------------------------------|
+| 🔗 LLM                   | `meta/llama3-70b-instruct` via `ChatNVIDIA` |
+| 📚 Document Storage      | FAISS Vector Store            |
+| 📄 PDF Ingestion         | LangChain + `PyPDFLoader`     |
+| 🧠 Embedding Model       | `NVIDIAEmbeddings`            |
+| 💬 Frontend              | Streamlit                     |
+| 📊 Chunking Strategy     | `RecursiveCharacterTextSplitter` |
+| 💾 Persistent Storage    | Local folder with FAISS       |
 
 ---
 
+## 🚀 Upcoming: GraphRAG (v2)
+
+We are actively working on integrating **GraphRAG**, which will replace FAISS with a graph-based retriever. This upgrade will enable:
+
+- Better context awareness by linking semantically related chunks.
+- Graph traversal algorithms for topic-centric exploration.
+- Advanced reasoning through node-to-node relationships.
+
+🛠️ *Stay tuned for a major update in the next release!*
+
+---
 
 ## 🏗️ Architecture Diagram
 
 ```mermaid
 flowchart TD
-    A[📁 User Uploads PDFs] --> B[📄 PyPDFLoader loads documents]
-    B --> C[🔗 Text Splitter chunks text]
-    C --> D[🧠 Generate NVIDIA Embeddings]
-    D --> E[🗂️ Store in FAISS Vector Store]
+    A[📁 Upload PDFs] --> B[📄 PyPDFLoader]
+    B --> C[🔗 Chunk via TextSplitter]
+    C --> D[🧠 NVIDIA Embeddings]
+    D --> E[🗂️ FAISS Vector Store Persistent data Base]
 
-    F[❓ User asks a question] --> G[🔍 Retriever fetches relevant chunks]
-    G --> H[📦 Prompt Template with context]
-    H --> I[🤖 meta/llama3-70b-instruct NVIDIA ChatNVIDIA]
-    I --> J[💬 Answer + Sources displayed in Streamlit]
-```
+    F[❓ User Asks Question] --> G[🔍 FAISS Retriever]
+    G --> H[📦 Prompt Assembly]
+    H --> I[🤖 meta/llama3-70b-instruct]
+    I --> J[💬 Streamlit Answer + Source Chunks]
+````
 
-## 🧬 Architecture Explanation
-### 1. PDF Upload (📁)
-Users upload one or more PDF files via the Streamlit sidebar. Each file is temporarily saved for processing.
+---
 
-### 2. Document Loading (📄)
-PyPDFLoader reads each PDF and converts it into a list of LangChain Document objects. Each object contains the text content and metadata (e.g., page number).
+## 🧬 System Workflow
 
-### 3. Text Chunking (🔗)
-Using RecursiveCharacterTextSplitter, long documents are split into smaller, manageable chunks (~700 characters with 50-character overlap). Overlapping chunks ensure better context recall during retrieval.
+### 1. 📁 Upload PDFs
 
-### 4. Vector Embeddings (🧠)
-NVIDIAEmbeddings computes high-dimensional embeddings (vectors) for each text chunk using NVIDIA's foundation models. These embeddings capture the semantic meaning of the chunks.
+PDFs are uploaded via the Streamlit sidebar and stored temporarily.
 
-### 5. Vector Store (🗂️)
-Embeddings are stored in a FAISS (Facebook AI Similarity Search) index. FAISS allows for fast similarity search by comparing query vectors to stored document vectors.
+### 2. 📄 Document Parsing
 
-### 6. User Query Input (❓)
-The user enters a natural language question in the main interface.
+`PyPDFLoader` loads the document and returns structured content.
 
-### 7. Retriever (🔍)
-The query is embedded and compared with stored vectors using FAISS. The top-k most relevant document chunks are returned.
+### 3. 🔗 Text Chunking
 
-### 8. Prompt Composition (📦)
-A ChatPromptTemplate creates a structured prompt with retrieved context and the user’s question. This prompt guides the LLM to base its response only on the provided documents.
+Documents are split into overlapping chunks using `RecursiveCharacterTextSplitter`.
 
-### 9. LLM Generation (🤖)
-ChatNVIDIA with meta/llama3-70b-instruct generates a coherent, grounded answer. The model uses both the prompt and context to answer accurately and concisely.
+### 4. 🧠 Embedding
 
-### 10. Result Display (💬)
-The final answer is shown to the user. A breakdown of the source document chunks used in generating the response is provided for transparency.
-Response time is also displayed.
+Chunks are embedded using `NVIDIAEmbeddings` to convert text into semantic vectors.
 
-## ✅ Benefits of This RAG Architecture
-- Explainable AI: Displays source documents for validation.
+### 5. 🗂️ FAISS Index
 
-- Scalable: Easily extendable to many documents and users.
+Chunks are saved into FAISS (on-disk), enabling fast vector-based similarity search.
 
-- Enterprise-Ready: Secure and controlled knowledge retrieval.
+### 6. ❓ Question Answering
 
-- Low Hallucination Risk: Answers grounded in actual documents.
+User questions are embedded and matched against stored vectors.
 
+### 7. 🤖 LLM Generation
+
+Retrieved context is passed into `meta/llama3-70b-instruct`, which generates a grounded answer.
+
+### 8. 💬 Answer Display
+
+Streamlit shows the answer along with document sources and latency.
+
+---
+
+## ✅ Features
+
+* 💾 **Persistent Vector DB**: Upload once, reuse always.
+* 🔍 **Context-Rich Answers**: Powered by semantic search.
+* 📄 **Multi-Document Support**: Handle multiple PDFs at once.
+* 🧠 **LLM Integration**: High-quality answers from Llama 3.
+* 🔜 **GraphRAG (Next)**: Graph-based reasoning engine (coming soon).
+
+---
 
 ## ⚙️ Installation
-Clone this repository:
 
 ```bash
 git clone https://github.com/your-username/nemo-pdf-chat-demo.git
 cd nemo-pdf-chat-demo
 ```
-Create a virtual environment and activate it:
+
+Create a virtual environment:
+
 ```bash
 python -m venv venv
-source venv/bin/activate  # or venv\Scripts\activate on Windows
+source venv/bin/activate  # On Windows: venv\Scripts\activate
 ```
+
 Install dependencies:
 
 ```bash
 pip install -r requirements.txt
 ```
-Create a .env file:
 
-```bash
-env
+Create a `.env` file:
+
+```env
 NVIDIA_API_KEY=your_nvidia_api_key_here
 ```
+
+---
+
 ## 🧪 Run the App
+
 ```bash
 streamlit run app.py
 ```
-Then open http://localhost:8501 in your browser.
+
+Then open [http://localhost:8501](http://localhost:8501) in your browser.
+
+---
+
+## 📦 File Structure
+
+```
+.
+├── app.py               # Main Streamlit App
+├── vectorstore/         # Stored FAISS DBs (one per PDF)
+├── image/               # Logos and favicon
+├── .env                 # API Keys
+├── requirements.txt     # Dependencies
+└── README.md            # This file
+```
+
+---
 
 
-📄 License
-This project is licensed under the MIT License.
+📢 **Next Release:** Full GraphRAG integration with semantic graph traversal, node linking, and more!
 
+```
